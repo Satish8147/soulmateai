@@ -28,6 +28,8 @@ const Matches: React.FC = () => {
     search: ''
   });
 
+  const [sortBy, setSortBy] = useState('relevance');
+
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [userGender, setUserGender] = useState<string>('');
 
@@ -151,8 +153,17 @@ const Matches: React.FC = () => {
         : true;
 
       return matchesGender && matchesReligion && matchesCaste && matchesSubCaste && matchesMotherTongue && matchesMaritalStatus && matchesAge && matchesSearch;
+    }).sort((a, b) => {
+      if (sortBy === 'newest') {
+        return b.id - a.id; // Higher ID = Newest
+      } else if (sortBy === 'age_asc') {
+        return a.age - b.age;
+      } else if (sortBy === 'age_desc') {
+        return b.age - a.age;
+      }
+      return 0; // Relevance (default order)
     });
-  }, [filters, userGender, profiles]);
+  }, [filters, userGender, profiles, sortBy]);
 
   const handleReset = () => {
     setFilters({
@@ -426,10 +437,13 @@ const Matches: React.FC = () => {
               <select
                 aria-label="Sort profiles"
                 className="bg-transparent text-sm font-medium text-slate-600 border-none outline-none cursor-pointer hover:text-rose-600 focus:ring-2 focus:ring-rose-500 rounded"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
               >
-                <option>Sort by: Relevance</option>
-                <option>Newest First</option>
-                <option>Age: Low to High</option>
+                <option value="relevance">Sort by: Relevance</option>
+                <option value="newest">Newest First</option>
+                <option value="age_asc">Age: Low to High</option>
+                <option value="age_desc">Age: High to Low</option>
               </select>
             </div>
 
