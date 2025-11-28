@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AppNotification } from '../types';
+import { useAuth } from './AuthContext';
 
 interface NotificationContextType {
   notifications: AppNotification[];
@@ -26,10 +27,18 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const { user } = useAuth();
 
-  // Load from local storage on mount
+  // Load from local storage on mount or user change
   useEffect(() => {
-    const saved = localStorage.getItem('soulmate_notifications');
+    if (!user?.id) {
+      setNotifications([]);
+      return;
+    }
+
+    const storageKey = `soulmate_notifications_${user.id}`;
+    const saved = localStorage.getItem(storageKey);
+
     if (saved) {
       try {
         setNotifications(JSON.parse(saved));
@@ -59,16 +68,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         }
       ];
       setNotifications(initialNotifications);
-      localStorage.setItem('soulmate_notifications', JSON.stringify(initialNotifications));
+      localStorage.setItem(storageKey, JSON.stringify(initialNotifications));
     }
-  }, []);
+  }, [user?.id]);
 
   // Save to local storage on change
   useEffect(() => {
-    if (notifications.length > 0) {
-      localStorage.setItem('soulmate_notifications', JSON.stringify(notifications));
+    if (user?.id && notifications.length > 0) {
+      const storageKey = `soulmate_notifications_${user.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(notifications));
     }
-  }, [notifications]);
+  }, [notifications, user?.id]);
 
   const addNotification = (notif: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: AppNotification = {
@@ -81,7 +91,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   };
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     );
   };
@@ -92,19 +102,21 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const clearNotifications = () => {
     setNotifications([]);
-    localStorage.removeItem('soulmate_notifications');
+    if (user?.id) {
+      localStorage.removeItem(`soulmate_notifications_${user.id}`);
+    }
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <NotificationContext.Provider value={{ 
-      notifications, 
-      unreadCount, 
-      addNotification, 
-      markAsRead, 
-      markAllAsRead, 
-      clearNotifications 
+    <NotificationContext.Provider value={{
+      notifications,
+      unreadCount,
+      addNotification,
+      markAsRead,
+      markAllAsRead,
+      clearNotifications
     }}>
       {children}
     </NotificationContext.Provider>

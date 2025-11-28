@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Profile, ChatMessage } from '../types';
 
 // NOTE: Update this URL to match your local PHP server configuration
-const API_BASE_URL = 'http://localhost/soulmateai/backend/api';
+const API_BASE_URL = 'http://192.168.1.13/soulmateai/backend/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
