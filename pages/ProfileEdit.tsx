@@ -1,4 +1,4 @@
-
+import { useNavigate } from 'react-router-dom';
 import React, { useState, useRef, useEffect } from 'react';
 import { generateBio } from '../services/geminiService';
 import { Sparkles, Save, Loader2, Camera, User, AlertCircle, Image as ImageIcon, Plus, Trash2, Check, X } from 'lucide-react';
@@ -54,8 +54,9 @@ const ProfileEdit: React.FC = () => {
     ampm: ''
   });
 
-  const { user } = useAuth();
+  const { user, checkProfileStatus } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
+  const navigate = useNavigate();
 
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
@@ -94,7 +95,7 @@ const ProfileEdit: React.FC = () => {
   };
 
 
-  const [errors, setErrors] = useState<{ gender?: string; religion?: string; dob?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; gender?: string; religion?: string; dob?: string }>({});
   const [showSaveMessage, setShowSaveMessage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -244,7 +245,8 @@ const ProfileEdit: React.FC = () => {
   };
 
   const validateForm = () => {
-    const newErrors: { gender?: string; religion?: string; dob?: string } = {};
+    const newErrors: { name?: string; gender?: string; religion?: string; dob?: string } = {};
+    if (!formData.name.trim()) newErrors.name = 'Full Name is required.';
     if (!formData.gender) newErrors.gender = 'Please select a gender.';
     if (!formData.religion) newErrors.religion = 'Please select a religion.';
     if (!formData.dob) newErrors.dob = 'Date of Birth is required.';
@@ -292,8 +294,12 @@ const ProfileEdit: React.FC = () => {
           if (user?.id) {
             localStorage.setItem(`soulmate_user_profile_${user.id}`, JSON.stringify(formData)); // Keep local sync for now
           }
+          await checkProfileStatus(); // Update auth context
           setShowSaveMessage(true);
-          setTimeout(() => setShowSaveMessage(false), 3000);
+          setTimeout(() => {
+            setShowSaveMessage(false);
+            navigate('/matches');
+          }, 1500);
         } else {
           alert('Failed to save profile to backend.');
         }
@@ -373,14 +379,22 @@ const ProfileEdit: React.FC = () => {
           {/* Basic Information */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+              <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-1">Full Name <span className="text-rose-600">*</span></label>
               <input
                 id="fullName"
                 type="text"
                 value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                className="w-full p-2.5 border border-slate-200 rounded-lg focus:ring-1 focus:ring-rose-500 outline-none"
+                onChange={e => {
+                  setFormData({ ...formData, name: e.target.value });
+                  if (errors.name) setErrors({ ...errors, name: undefined });
+                }}
+                className={`w-full p-2.5 border rounded-lg focus:ring-1 focus:ring-rose-500 outline-none ${errors.name ? 'border-rose-500 bg-rose-50' : 'border-slate-200'}`}
               />
+              {errors.name && (
+                <p className="mt-1 text-xs text-rose-600 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" /> {errors.name}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>

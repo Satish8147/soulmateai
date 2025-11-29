@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Heart, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { authService } from '../services/api';
+import { authService, profileService } from '../services/api';
 
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
@@ -27,9 +27,24 @@ const SignIn: React.FC = () => {
 
     if (response && response.user) {
       // In a real app, we'd store the token here
-      login(response.user);
-      const from = (location.state as any)?.from?.pathname || '/matches';
-      navigate(from, { replace: true });
+      // Check if user has a profile
+      try {
+        const profile = await profileService.getByUserId(response.user.id);
+
+        // Login with profile status
+        login(response.user, !!profile);
+
+        if (profile) {
+          const from = (location.state as any)?.from?.pathname || '/matches';
+          navigate(from, { replace: true });
+        } else {
+          navigate('/profile', { replace: true });
+        }
+      } catch (error) {
+        console.error("Error checking profile", error);
+        login(response.user, false); // Default to false on error
+        navigate('/profile', { replace: true });
+      }
     } else {
       alert("Login failed. Please check your credentials.");
     }

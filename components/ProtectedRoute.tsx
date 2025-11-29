@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, hasProfile } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -19,6 +19,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     // Redirect them to the /signin page, but save the current location they were
     // trying to go to when they were redirected.
     return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  // If authenticated but no profile, and not already on profile page, redirect to profile
+  if (!hasProfile && location.pathname !== '/profile') {
+    return <Navigate to="/profile" replace />;
   }
 
   return <>{children}</>;

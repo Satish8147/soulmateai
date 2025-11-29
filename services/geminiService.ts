@@ -73,7 +73,7 @@ export const getMatchmakerResponse = async (
     `;
 
     const model = 'gemini-2.5-flash';
-    
+
     // Construct the conversation history for the API
     const contents = [
       ...chatHistory.map(msg => ({
@@ -95,7 +95,7 @@ export const getMatchmakerResponse = async (
 
     const responseText = response.text || "";
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    
+
     // Parse for JSON recommendation block
     let recommendedProfileIds: string[] | undefined;
     let finalText = responseText;
@@ -111,7 +111,7 @@ export const getMatchmakerResponse = async (
         // Let's strip the JSON block for the UI text, assuming the bot introduces it.
         finalText = responseText.replace(jsonMatch[0], "").trim();
         if (jsonContent.reason) {
-            finalText += `\n\n${jsonContent.reason}`;
+          finalText += `\n\n${jsonContent.reason}`;
         }
       } catch (e) {
         console.warn("Failed to parse matchmaker JSON", e);
@@ -126,6 +126,8 @@ export const getMatchmakerResponse = async (
 
   } catch (error) {
     console.error("Matchmaker API Error:", error);
-    return { text: "I'm having trouble connecting to the matchmaking server right now. Please try again later." };
+    const key = process.env.API_KEY || "undefined";
+    const maskedKey = key.length > 10 ? `${key.substring(0, 5)}...${key.substring(key.length - 5)}` : key;
+    return { text: `Connection error: ${(error as any).message || "Unknown error"}. Key used: ${maskedKey}. Please check your API key.` };
   }
 };
